@@ -1,6 +1,7 @@
 streamlit
 pandas
 Tensorflow 
+tf-nightly
 keras
 cv2
 collections
