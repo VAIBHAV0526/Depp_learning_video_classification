@@ -1,6 +1,6 @@
 streamlit
 pandas
-Tensorflow 2.7.0
+Tensorflow 
 keras
 cv2
 collections
