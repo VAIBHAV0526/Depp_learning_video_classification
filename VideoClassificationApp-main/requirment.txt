@@ -1,0 +1,9 @@
+streamlit
+pandas
+Tensorflow 2.7.0
+keras
+cv2
+collections
+os
+subprocess
+time
