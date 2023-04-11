@@ -2,7 +2,6 @@ import numpy as np
 import streamlit as st
 import tensorflow
 import keras
-import tensorflow 
 import cv2
 from collections import deque
 import os
