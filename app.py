@@ -1,6 +1,6 @@
 import numpy as np
 import streamlit as st
-import tensorflow
+
 import keras
 import tensorflow 
 import cv2
@@ -8,6 +8,32 @@ from collections import deque
 import os
 import subprocess
 import time
+st.set_page_config(layout="wide")
+
+st.markdown("""
+<style>
+.big-font {
+    font-size:100px !important;
+    color:red;
+}
+.title{
+font-size:150px !important;
+color:purple;
+}
+.modelinfo{
+font-size:50px !important;
+color:blue;
+}
+.Classification{
+font-size:30px;
+color:red;
+}
+.notice{
+font-size:20px;
+color:red;
+}
+</style>
+""", unsafe_allow_html=True)
 
 def countdown(time_sec):
     while time_sec:
@@ -27,9 +53,12 @@ IMAGE_HEIGHT , IMAGE_WIDTH = 64, 64
 
 # Specify the list containing the names of the classes used for training. Feel free to choose any set of classes.
 CLASSES_LIST = ["WalkingWithDog", "TaiChi", "Swing", "HorseRace"]
+# CLASSES_LIST.reverse()
+
 
 # Specify the number of frames of a video that will be fed to the model as one sequence.
 SEQUENCE_LENGTH = 20
+pred=""
 
 
 # creating a function for Prediction
@@ -91,7 +120,7 @@ def predict_on_video(video_file_path, output_file_path, SEQUENCE_LENGTH,loaded_m
             predicted_class_name = CLASSES_LIST[predicted_label]
 
         # Write predicted class name on top of the frame.
-        cv2.putText(frame, predicted_class_name, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 2)
+        cv2.putText(frame, predicted_class_name, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 255), 2)
         
         # Write The frame into the disk using the VideoWriter Object.
         video_writer.write(frame)
@@ -99,14 +128,94 @@ def predict_on_video(video_file_path, output_file_path, SEQUENCE_LENGTH,loaded_m
     # Release the VideoCapture and VideoWriter objects.
     video_reader.release()
     video_writer.release()
+ 
+def predict_single_action(video_file_path, SEQUENCE_LENGTH,LRCN_model):
+    '''
+    This function will perform single action recognition prediction on a video using the LRCN model.
+    Args:
+    video_file_path:  The path of the video stored in the disk on which the action recognition is to be performed.
+    SEQUENCE_LENGTH:  The fixed number of frames of a video that can be passed to the model as one sequence.
+    '''
 
-  
+    # Initialize the VideoCapture object to read from the video file.
+    video_reader = cv2.VideoCapture(video_file_path)
+
+    # Get the width and height of the video.
+    original_video_width = int(video_reader.get(cv2.CAP_PROP_FRAME_WIDTH))
+    original_video_height = int(video_reader.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # Declare a list to store video frames we will extract.
+    frames_list = []
+    
+    # Initialize a variable to store the predicted action being performed in the video.
+    predicted_class_name = ''
+
+    # Get the number of frames in the video.
+    video_frames_count = int(video_reader.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    # Calculate the interval after which frames will be added to the list.
+    skip_frames_window = max(int(video_frames_count/SEQUENCE_LENGTH),1)
+
+    # Iterating the number of times equal to the fixed length of sequence.
+    for frame_counter in range(SEQUENCE_LENGTH):
+
+        # Set the current frame position of the video.
+        video_reader.set(cv2.CAP_PROP_POS_FRAMES, frame_counter * skip_frames_window)
+
+        # Read a frame.
+        success, frame = video_reader.read() 
+
+        # Check if frame is not read properly then break the loop.
+        if not success:
+            break
+
+        # Resize the Frame to fixed Dimensions.
+        resized_frame = cv2.resize(frame, (IMAGE_HEIGHT, IMAGE_WIDTH))
+        
+        # Normalize the resized frame by dividing it with 255 so that each pixel value then lies between 0 and 1.
+        normalized_frame = resized_frame / 255
+        
+        # Appending the pre-processed frame into the frames list
+        frames_list.append(normalized_frame)
+
+    # Passing the  pre-processed frames to the model and get the predicted probabilities.
+    predicted_labels_probabilities = LRCN_model.predict(np.expand_dims(frames_list, axis = 0))[0]
+
+    # Get the index of class with highest probability.
+    predicted_label = np.argmax(predicted_labels_probabilities)
+
+    # Get the class name using the retrieved index.
+    predicted_class_name = CLASSES_LIST[predicted_label]
+    
+    # Display the predicted action along with the prediction confidence.
+
+    pred=predicted_class_name
+    st.write(pred)
+    st.markdown(f'<p class="big-font">{pred}</p>', unsafe_allow_html=True)
+    result='Action Predicted:' +(predicted_class_name) + ' Confidence:'+ str(predicted_labels_probabilities[predicted_label])
+        
+    # Release the VideoCapture object. 
+    video_reader.release()
+    return result
 def main():  
     # giving a title
-    
-    st.title('Video Classification Web App')
-    st.write("model architecture diagram")
-    st.image("/Users/vaibhav/Downloads/VideoClassificationApp-main/Unknown-2.png", caption="video classification", width=500, use_column_width=None, clamp=False, channels="RGB", output_format="auto")
+    hide_img_fs = '''
+<style>
+button[title="View fullscreen"]{
+    visibility: hidden;}
+</style>
+'''
+
+    st.markdown( '<h1 class="title"> VIDEO CLASSIFICATION APP</h1>',unsafe_allow_html=True)
+    st.markdown( '<a   href= "https://github.com/VAIBHAV0526/Depp_learning_video_classification" class="modelinfo"> model information </a>',unsafe_allow_html=True)
+    st.markdown( '<h3 class="notice" > model train on 4 class </h3>',unsafe_allow_html=True)
+    st.markdown( '<h3  class="notice"> Walkinwithdog  Taichi Swing  horseRace </h3>',unsafe_allow_html=True)
+    st.markdown( '<h3  class="notice"> due to computation limit </h3>',unsafe_allow_html=True)
+    count=0
+    if st.button("model architecture"):
+            st.image("/Users/vaibhav/Downloads/VideoClassificationApp-main/Unknown-2.png", caption="video classification", width=500, use_column_width=None, clamp=False, channels="RGB", output_format="auto")
+            st.markdown(hide_img_fs, unsafe_allow_html=True)
+
 
     uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "mpeg"])
     if uploaded_file is not None:
@@ -119,15 +228,19 @@ def main():
         if st.button('Classify The Video'):
             # Construct the output video path.
             st.info("started")
-            output_video_file_path = "video/"+uploaded_file.name.split("/")[-1].split(".")[0]+"_output1.mp4"
+            output_video_file_path = "/Users/vaibhav/Downloads/VideoClassificationApp-main/video/"+uploaded_file.name.split("/")[-1].split(".")[0]+"_output1.mp4"
             with st.spinner('Wait for it...'):
                 loaded_model = keras.models.load_model("/Users/vaibhav/Downloads/VideoClassificationApp-main/convlstm_model___Date_Time_2022_06_04__01_11_42___Loss_0.8462830781936646___Accuracy_0.76.h5")
                 # Perform Action Recognition on the Test Video.
+                reusult=predict_single_action("/Users/vaibhav/Downloads/VideoClassificationApp-main/temp/"+uploaded_file.name.split("/")[-1], SEQUENCE_LENGTH,LRCN_model=loaded_model)
                 predict_on_video("/Users/vaibhav/Downloads/VideoClassificationApp-main/temp/"+uploaded_file.name.split("/")[-1], output_video_file_path, SEQUENCE_LENGTH,loaded_model)
+               
                 #OpenCV’s mp4v codec is not supported by HTML5 Video Player at the moment, one just need to use another encoding option which is x264 in this case 
                 os.chdir('/Users/vaibhav/Downloads/VideoClassificationApp-main/video/')
                 subprocess.call(['ffmpeg','-y', '-i', uploaded_file.name.split("/")[-1].split(".")[0]+"_output1.mp4",'-vcodec','libx264','-f','mp4','output4.mp4'],shell=True)
                 st.success('Done!')
+                st.markdown(f'<p class="Classification">{reusult}</p>', unsafe_allow_html=True)
+                
             
         #     #displaying a local video fil       
             
@@ -156,7 +269,21 @@ def main():
 if __name__ == '__main__':
     
     main()
+st.markdown( '<footer > design and devlop by vaibhav singh </footer>',unsafe_allow_html=True)
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  
+    
+  
     
     
     
