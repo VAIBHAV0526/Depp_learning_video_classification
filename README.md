@@ -1,6 +1,6 @@
 # Depp_learning_video_classification
 the Depp learning model trained on the 4 class to classify the human behaviour
-<a href="https://vaibhav0526-video-app-x11hxa.streamlit.app/">link for app </a>
+<a  href="https://vaibhav0526-video-app-x11hxa.streamlit.app/">link for app </a>
 <img src="https://github.com/VAIBHAV0526/Depp_learning_video_classification/blob/main/video%20classification/1.jpg"/>
 <img src="https://github.com/VAIBHAV0526/Depp_learning_video_classification/blob/main/video%20classification/2.jpg"/>
 <img src="https://github.com/VAIBHAV0526/Depp_learning_video_classification/blob/main/video%20classification/3.jpg"/>
